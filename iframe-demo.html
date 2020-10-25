@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html style="font-family: Arial, Helvetica, sans-serif;">
     <head>
-        <h2 style="text-align: center;">WebGL rendering in iframe</h2>
+        <h2 style="text-align: center;">WebGL rendering in iframe (with UI synchronization)</h2>
     </head>
     <body>
         <div style="margin:auto; width:fit-content; padding-bottom: 20px;">
@@ -17,7 +17,6 @@
     </body>
     <script>
         function onSelectModel(select) {
-            //var option = select.options[select.selectedIndex];
             window.frames[0].postMessage(select.selectedIndex + "", "https://artv93.github.io");
         }
         window.addEventListener("message", (event) => {
