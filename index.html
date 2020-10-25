@@ -9,7 +9,7 @@
 
 	<body>
 		<div id="info">
-			HTML5 UI Overlay inside the element 
+			HTML5 UI Overlay
 		</div>
 
 		<script src="./three.min.js"></script>
@@ -79,7 +79,7 @@
 
 				// model
 				loader = new THREE.FBXLoader();
-				loader.load("./20201025-mobilescanner/body.fbx", function (object) {
+				loader.load("./20201025-offlinescanner/output.fbx", function (object) {
 
 					object.traverse(function (child) {
 
@@ -91,6 +91,7 @@
 						}
 					});
 					scene.add(object);
+					model = object;
 				} );
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -131,16 +132,21 @@
 			}
 
 			window.addEventListener("message", (event) => {
+				console.log("Recieved event:");
+				console.dir(event);
+				if (model)
+					scene.remove(model);
 				loader.load(event.data, function (object) {
-				object.traverse(function (child) {
-					if (child.isMesh) {
-						child.castShadow = true;
-						child.receiveShadow = true;
-					}
-				} );
-				scene.add(object);
+					object.traverse(function (child) {
+						if (child.isMesh) {
+							child.castShadow = true;
+							child.receiveShadow = true;
+						}
+					} );
+					scene.add(object);
+					model = object;
 				});
-				//event.source.postMessage("pong", event.origin);
+				event.source.postMessage("pong", event.origin);
 			}, false);
 
 		</script>
