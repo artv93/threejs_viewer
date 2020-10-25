@@ -1,0 +1,8 @@
+mtllib lores_uv_out.mtl
+newmtl material_0
+illum 4
+map_Kd lores_uv_out.jpg
+Ni 1.00
+Kd 1.00 1.00 1.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
