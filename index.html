@@ -132,8 +132,6 @@
 			}
 
 			window.addEventListener("message", (event) => {
-				console.log("Recieved event:");
-				console.dir(event);
 				if (model)
 					scene.remove(model);
 				loader.load(event.data, function (object) {
@@ -146,7 +144,8 @@
 					scene.add(object);
 					model = object;
 				});
-				event.source.postMessage("pong", event.origin);
+				if (event.origin != "null")
+					event.source.postMessage("pong", event.origin);
 			}, false);
 
 		</script>

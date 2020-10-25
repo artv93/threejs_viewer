@@ -16,7 +16,7 @@
     <script>
         function onSelectModel(select) {
             var option = select.options[select.selectedIndex];
-            window.frames[0].postMessage(option.text);
+            window.frames[0].postMessage(option.text, "https://artv93.github.io");
             console.log("Sent event: ");
             console.dir(window.frames[0]);
         }
