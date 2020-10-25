@@ -142,12 +142,22 @@
 					} );
 					scene.add(object);
 					model = object;
-					var select = document.getElementById("select-model");
-					parent.postMessage("" + select.selectedIndex, "*");
+					if (inIframe()) {
+						var select = document.getElementById("select-model");
+						parent.postMessage("" + select.selectedIndex, "*");
+					}
 				});
 			}
 
 			document.addEventListener('contextmenu', event => event.preventDefault());
+
+			function inIframe () {
+				try {
+					return window.self !== window.top;
+				} catch (e) {
+					return true;
+				}
+			}
 
 		</script>
 
