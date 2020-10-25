@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="noselect">
 	<head>
 		<title>three.js webgl - FBX loader</title>
 		<meta charset="utf-8">
@@ -41,30 +41,30 @@
 
 			function init() {
 
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
+				container = document.createElement('div');
+				document.body.appendChild(container);
 
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.set( 100, 200, 300 );
+				camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+				camera.position.set(100, 200, 300);
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xa0a0a0 );
-				scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+				scene.background = new THREE.Color(0xa0a0a0);
+				scene.fog = new THREE.Fog(0xa0a0a0, 200, 1000);
 
-				light = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-				light.position.set( 0, 200, 0 );
-				scene.add( light );
+				light = new THREE.HemisphereLight(0xffffff, 0x444444);
+				light.position.set(0, 200, 0);
+				scene.add(light);
 
-				light = new THREE.DirectionalLight( 0xffffff );
-				light.position.set( 0, 200, 100 );
+				light = new THREE.DirectionalLight(0xffffff);
+				light.position.set(0, 200, 100);
 				light.castShadow = true;
 				light.shadow.camera.top = 180;
-				light.shadow.camera.bottom = - 100;
+				light.shadow.camera.bottom = -100;
 				light.shadow.camera.left = - 120;
 				light.shadow.camera.right = 120;
-				scene.add( light );
+				scene.add(light);
 
-				// scene.add( new THREE.CameraHelper( light.shadow.camera ) );
+				// scene.add(new THREE.CameraHelper(light.shadow.camera));
 
 				// ground
 				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false }));
@@ -78,33 +78,31 @@
 				scene.add(grid);
 
 				// model
+				var modelPath = "./20201025-offlinescanner/output.fbx";
 				loader = new THREE.FBXLoader();
-				loader.load("./20201025-offlinescanner/output.fbx", function (object) {
-
+				loader.load(modelPath, function (object) {
 					object.traverse(function (child) {
-
 						if (child.isMesh) {
-
 							child.castShadow = true;
 							child.receiveShadow = true;
-
 						}
 					});
 					scene.add(object);
 					model = object;
+					document.getElementById("info").innerHTML = modelPath;
 				} );
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(window.innerWidth, window.innerHeight);
 				renderer.shadowMap.enabled = true;
-				container.appendChild( renderer.domElement );
+				container.appendChild(renderer.domElement);
 
-				controls = new THREE.OrbitControls( camera, renderer.domElement );
-				controls.target.set( 0, 100, 0 );
+				controls = new THREE.OrbitControls(camera, renderer.domElement);
+				controls.target.set(0, 100, 0);
 				controls.update();
 
-				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener('resize', onWindowResize, false);
 
 				// stats
 				//stats = new Stats();
@@ -118,16 +116,11 @@
 			}
 
 			function animate() {
-
 				requestAnimationFrame(animate);
-
 				var delta = clock.getDelta();
-
 				if (mixer)
 					mixer.update( delta );
-
 				renderer.render( scene, camera );
-
 				//stats.update();
 			}
 
@@ -143,9 +136,8 @@
 					} );
 					scene.add(object);
 					model = object;
+					document.getElementById("info").innerHTML = event.data;
 				});
-				if (event.origin != "null")
-					event.source.postMessage("pong", event.origin);
 			}, false);
 
 		</script>
