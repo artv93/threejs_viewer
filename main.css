@@ -25,7 +25,7 @@ canvas {
 	display: block;
 }
 
-#info {
+.overlay {
 	position: absolute;
 	top: 0px;
 	width: 100%;

@@ -8,9 +8,17 @@
 	</head>
 
 	<body>
-		<div id="info">
+		<!--div id="info">
 			HTML5 UI Overlay
-		</div>
+		</div-->
+
+		<div class="overlay">
+            <label for="select-model">Load model (request from iframe):</label>
+            <select name="select-model" id="select-model" onchange="onSelectModel(this)">
+                <option value="0">./20201025-offlinescanner/output.fbx</option>
+                <option value="1">./20201025-mobilescanner/body.fbx</option>
+            </select>
+        </div>
 
 		<script src="./three.min.js"></script>
 
@@ -78,19 +86,8 @@
 				scene.add(grid);
 
 				// model
-				var modelPath = "./20201025-offlinescanner/output.fbx";
 				loader = new THREE.FBXLoader();
-				loader.load(modelPath, function (object) {
-					object.traverse(function (child) {
-						if (child.isMesh) {
-							child.castShadow = true;
-							child.receiveShadow = true;
-						}
-					});
-					scene.add(object);
-					model = object;
-					document.getElementById("info").innerHTML = modelPath;
-				} );
+				loadModel("./20201025-offlinescanner/output.fbx")
 
 				renderer = new THREE.WebGLRenderer({ antialias: true });
 				renderer.setPixelRatio(window.devicePixelRatio);
@@ -125,9 +122,18 @@
 			}
 
 			window.addEventListener("message", (event) => {
+				loadModel(event.data);
+			}, false);
+
+			function onSelectModel(select) {
+				var option = select.options[select.selectedIndex];
+				loadModel(option.text);
+			}
+
+			function loadModel(url) {
 				if (model)
 					scene.remove(model);
-				loader.load(event.data, function (object) {
+				loader.load(url, function (object) {
 					object.traverse(function (child) {
 						if (child.isMesh) {
 							child.castShadow = true;
@@ -136,9 +142,9 @@
 					} );
 					scene.add(object);
 					model = object;
-					document.getElementById("info").innerHTML = event.data;
+					window.parent.postMessage(select.selectedIndex, "https://artv93.github.io");
 				});
-			}, false);
+			}
 
 			document.addEventListener('contextmenu', event => event.preventDefault());
 
