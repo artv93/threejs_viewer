@@ -83,8 +83,10 @@
 				var loader = new THREE.FBXLoader();
 				loader.load("./20201025-offlinescanner/output.fbx", function ( object ) {
 
-					mixer = new THREE.AnimationMixer( object );
+					object.scale.multiplyScalar(0.1); 
 
+					mixer = new THREE.AnimationMixer( object );
+					
 					var action = mixer.clipAction( object.animations[ 0 ] );
 					action.play();
 
@@ -96,7 +98,6 @@
 							child.receiveShadow = true;
 
 						}
-
 					} );
 
 					scene.add( object );
