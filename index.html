@@ -122,10 +122,13 @@
 			}
 
 			window.addEventListener("message", (event) => {
-				loadModel(event.data);
+				document.getElementById("select-model").selectedIndex = event.data;
 			}, false);
 
 			function onSelectModel(select) {
+				if (inIframe()) {
+					parent.postMessage(select.selectedIndex + "", "*");
+				}
 				var option = select.options[select.selectedIndex];
 				loadModel(option.text);
 			}
@@ -142,10 +145,6 @@
 					} );
 					scene.add(object);
 					model = object;
-					if (inIframe()) {
-						var select = document.getElementById("select-model");
-						parent.postMessage("" + select.selectedIndex, "*");
-					}
 				});
 			}
 
