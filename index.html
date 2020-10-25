@@ -82,14 +82,7 @@
 				// model
 				var loader = new THREE.FBXLoader();
 				loader.load("./20201025-offlinescanner/output.fbx", function ( object ) {
-
-					object.scale.multiplyScalar(0.1); 
-
-					/*mixer = new THREE.AnimationMixer( object );
 					
-					var action = mixer.clipAction( object.animations[ 0 ] );
-					action.play();*/
-
 					object.traverse( function ( child ) {
 
 						if ( child.isMesh ) {
