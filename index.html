@@ -97,6 +97,7 @@
 
 				controls = new THREE.OrbitControls(camera, renderer.domElement);
 				controls.target.set(0, 100, 0);
+				controls.enablePan = false;
 				controls.update();
 
 				window.addEventListener('resize', onWindowResize, false);
