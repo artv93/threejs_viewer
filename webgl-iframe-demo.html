@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html style="font-family: Arial, Helvetica, sans-serif;">
     <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
         <h2 style="text-align: center;">WebGL rendering in iframe (with syncronized UI events)</h2>
     </head>
     <body>
-        <div style="margin:auto; width:fit-content; padding-bottom: 20px;">
+        <div style="margin:auto; width:max-content; padding-bottom: 20px;">
             <label for="select-model">Select from client UI:</label>
             <select name="select-model" id="select-model" onchange="onSelectModel(this)">
                 <option value="0">./20201025-offlinescanner/output.fbx</option>
                 <option value="1">./20201025-mobilescanner/body.fbx</option>
             </select>
         </div>
-        <div style="margin:auto; width:fit-content;">
+        <div style="margin:auto; width:max-content;">
             <iframe width="560" height="315" src="https://artv93.github.io/webgl_viewer/" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
     </body>
