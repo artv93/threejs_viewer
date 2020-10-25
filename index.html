@@ -9,8 +9,7 @@
 
 	<body>
 		<div id="info">
-			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br />
-			Character and animation from <a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>
+			HTML5 UI Overlay inside the element
 		</div>
 
 		<script src="./three.min.js"></script>
@@ -24,11 +23,8 @@
 		<script src="./stats.min.js"></script>
 
 		<script>
-
 			if ( WEBGL.isWebGLAvailable() === false ) {
-
 				document.body.appendChild( WEBGL.getWebGLErrorMessage() );
-
 			}
 
 			var container, stats, controls;
@@ -81,8 +77,8 @@
 
 				// model
 				var loader = new THREE.FBXLoader();
-				loader.load("./20201025-offlinescanner/output.fbx", function ( object ) {
-					
+				loader.load("./20201025-mobilescanner/output.fbx", function ( object ) {
+
 					object.traverse( function ( child ) {
 
 						if ( child.isMesh ) {
@@ -110,8 +106,8 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 
 				// stats
-				stats = new Stats();
-				container.appendChild( stats.dom );
+				//stats = new Stats();
+				//container.appendChild( stats.dom );
 
 			}
 
@@ -136,7 +132,7 @@
 
 				renderer.render( scene, camera );
 
-				stats.update();
+				//stats.update();
 
 			}
 
