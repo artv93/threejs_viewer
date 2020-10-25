@@ -8,12 +8,8 @@
 	</head>
 
 	<body>
-		<!--div id="info">
-			HTML5 UI Overlay
-		</div-->
-
 		<div class="overlay">
-            <label for="select-model">Load model (host):</label>
+            <label for="select-model">Load model:</label>
             <select name="select-model" id="select-model" onchange="onSelectModel(this)">
                 <option value="0">./20201025-offlinescanner/output.fbx</option>
                 <option value="1">./20201025-mobilescanner/body.fbx</option>
@@ -103,8 +99,8 @@
 				window.addEventListener('resize', onWindowResize, false);
 
 				// stats
-				//stats = new Stats();
-				//container.appendChild( stats.dom );
+				stats = new Stats();
+				container.appendChild(stats.dom);
 			}
 
 			function onWindowResize() {
@@ -119,7 +115,7 @@
 				if (mixer)
 					mixer.update( delta );
 				renderer.render( scene, camera );
-				//stats.update();
+				stats.update();
 			}
 
 			window.addEventListener("message", (event) => {
