@@ -122,7 +122,9 @@
 			}
 
 			window.addEventListener("message", (event) => {
-				document.getElementById("select-model").selectedIndex = event.data;
+				var select = document.getElementById("select-model");
+				select.selectedIndex = event.data;
+				select.dispatchEvent(new Event('change'));
 			}, false);
 
 			function onSelectModel(select) {
