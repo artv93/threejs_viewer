@@ -21,6 +21,7 @@
             window.frames[0].postMessage(option.text, "https://artv93.github.io");
         }
         window.addEventListener("message", (event) => {
+            console.log("Received event!");
             document.getElementById("select-model").selectedIndex = event.data;
         });
     </script>
