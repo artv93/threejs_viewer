@@ -99,8 +99,8 @@
 				window.addEventListener('resize', onWindowResize, false);
 
 				// stats
-				stats = new Stats();
-				container.appendChild(stats.dom);
+				//stats = new Stats();
+				//container.appendChild(stats.dom);
 			}
 
 			function onWindowResize() {
@@ -115,7 +115,7 @@
 				if (mixer)
 					mixer.update( delta );
 				renderer.render( scene, camera );
-				stats.update();
+				//stats.update();
 			}
 
 			window.addEventListener("message", (event) => {
