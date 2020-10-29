@@ -58,8 +58,6 @@
 				scene.background = new THREE.Color(0xe6e6e6);
 				scene.fog = new THREE.Fog(0xe6e6e6, 500, 1000);
 
-				console.dir(scene.fog);
-
 				light = new THREE.HemisphereLight(0xffffff, 0xa0a0a0);
 				light.position.set(0, 200, 0);
 				scene.add(light);
@@ -73,13 +71,18 @@
 				light.shadow.camera.right = 120;
 				scene.add(light);
 
-				//scene.add(new THREE.CameraHelper(light.shadow.camera));
+				// scene.add(new THREE.CameraHelper(light.shadow.camera));
 
 				// ground
-				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.ShadowMaterial({opacity: 0.5}));
+				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({ color: 0xa0a0a0, depthWrite: true }));
 				mesh.rotation.x = - Math.PI / 2;
 				mesh.receiveShadow = true;
 				scene.add(mesh);
+
+				/*var grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
+				grid.material.opacity = 0.2;
+				grid.material.transparent = true;
+				scene.add(grid);*/
 
 				// model
 				loader = new THREE.FBXLoader();
