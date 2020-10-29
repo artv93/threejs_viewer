@@ -103,6 +103,7 @@
 				controls = new THREE.OrbitControls(camera, renderer.domElement);
 				controls.target.set(0, 100, 0);
 				controls.enablePan = false;
+				controls.enableDamping = true;
 				controls.update();
 
 				window.addEventListener('resize', onWindowResize, false);
@@ -124,6 +125,7 @@
 				if (mixer)
 					mixer.update( delta );
 				renderer.render( scene, camera );
+				controls.update();
 				//stats.update();
 			}
 
