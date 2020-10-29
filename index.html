@@ -96,7 +96,7 @@
 
 				composer = new THREE.EffectComposer( renderer );
 
-				var ssaoPass = new THREE.SSAOPass( scene, camera, width, height );
+				var ssaoPass = new THREE.SSAOPass( scene, camera, window.innerWidth, window.innerHeight );
 				ssaoPass.kernelRadius = 16;
 				composer.addPass( ssaoPass );
 
