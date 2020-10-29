@@ -55,8 +55,8 @@
 				camera.position.set(100, 200, 300);
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color(0xfbfbfb);
-				scene.fog = new THREE.Fog(0xfbfbfb, 500, 1000);
+				scene.background = new THREE.Color(0xfcfcfc);
+				scene.fog = new THREE.Fog(0xfcfcfc, 500, 1000);
 
 				light = new THREE.HemisphereLight(0xffffff, 0xa0a0a0);
 				light.position.set(0, 200, 0);
@@ -74,7 +74,7 @@
 				// scene.add(new THREE.CameraHelper(light.shadow.camera));
 
 				// ground
-				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({ color: 0x090909, depthWrite: false }));
+				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({ color: 0xa0a0a0, depthWrite: false }));
 				mesh.rotation.x = - Math.PI / 2;
 				mesh.receiveShadow = true;
 				scene.add(mesh);
