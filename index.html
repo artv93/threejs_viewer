@@ -17,12 +17,15 @@
         </div>
 
 		<script src="./three.min.js"></script>
-
 		<script src="./inflate.min.js"></script>
 		<script src="./FBXLoader.js"></script>
-
 		<script src="./OrbitControls.js"></script>
-
+		<script src="./SSAOShader.js"></script>
+		<script src="./EffectComposer.js"></script>
+		<script src="./ShaderPass.js"></script>
+		<script src="./SSAOPass.js"></script>
+		<script src="./CopyShader.js"></script>
+		<script src="./SimplexNoise.js"></script>
 		<script src="./WebGL.js"></script>
 		<script src="./stats.min.js"></script>
 
@@ -53,7 +56,7 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color(0xf0f0f0);
-				scene.fog = new THREE.Fog(0xf0f0f0, 200, 1000);
+				scene.fog = new THREE.Fog(0xf0f0f0, 100, 1000);
 
 				light = new THREE.HemisphereLight(0xffffff, 0xa0a0a0);
 				light.position.set(0, 200, 0);
@@ -90,6 +93,12 @@
 				renderer.setSize(window.innerWidth, window.innerHeight);
 				renderer.shadowMap.enabled = true;
 				container.appendChild(renderer.domElement);
+
+				composer = new THREE.EffectComposer( renderer );
+
+				var ssaoPass = new THREE.SSAOPass( scene, camera, width, height );
+				ssaoPass.kernelRadius = 16;
+				composer.addPass( ssaoPass );
 
 				controls = new THREE.OrbitControls(camera, renderer.domElement);
 				controls.target.set(0, 100, 0);
