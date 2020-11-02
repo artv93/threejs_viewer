@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>WebGL Demo</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div class="overlay">
+            <label for="select-model">Load model:</label>
+            <select name="select-model" id="select-model">
+                <option value="0">./20201025-offlinescanner/output.fbx</option>
+                <option value="1">./20201025-mobilescanner/body.fbx</option>
+            </select>
+        </div>
+		<script type="module">
+
+			import * as THREE from './three.js-r122/build/three.module.js';
+
+			import { OrbitControls } from './three.js-r122/examples/jsm/controls/OrbitControls.js';
+			import { GLTFLoader } from './three.js-r122/examples/jsm/loaders/GLTFLoader.js';
+			import { FBXLoader } from './/three.js-r122/examples/jsm/loaders/FBXLoader.js';
+			import { RGBELoader } from './three.js-r122/examples/jsm/loaders/RGBELoader.js';
+			import { RoughnessMipmapper } from './three.js-r122/examples/jsm/utils/RoughnessMipmapper.js';
+
+			var camera, scene, renderer;
+			var loader, model, controls;
+
+			var select = document.getElementById("select-model");
+
+			init();
+			render();
+
+			function init() {
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.set(100, 200, 300);
+
+				scene = new THREE.Scene();
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 180;
+				dirLight.shadow.camera.bottom = - 100;
+				dirLight.shadow.camera.left = - 120;
+				dirLight.shadow.camera.right = 120;
+				scene.add( dirLight );
+				// new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) 	
+				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.ShadowMaterial({opacity: 0.5}));
+				mesh.rotation.x = - Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+
+				new RGBELoader()
+					.setDataType( THREE.UnsignedByteType )
+					.setPath( './three.js-r122/examples/textures/equirectangular/' )
+					.load( 'royal_esplanade_1k.hdr', function ( texture ) {
+
+						const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+
+						scene.background = new THREE.Color(0xe6e6e6);
+						scene.fog = new THREE.Fog(0xe6e6e6, 500, 1000);
+						scene.environment = envMap;
+
+						texture.dispose();
+						pmremGenerator.dispose();
+
+						//render();
+
+						loader = new FBXLoader();
+						loadModel("./20201025-offlinescanner/output.fbx")
+
+					} );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.toneMappingExposure = 2.5;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				const pmremGenerator = new THREE.PMREMGenerator( renderer );
+				pmremGenerator.compileEquirectangularShader();
+
+				controls = new OrbitControls( camera, renderer.domElement );
+				//controls.addEventListener( 'change', render ); // use if there is no animation loop
+				controls.target.set(0, 100, 0);
+				//controls.enablePan = false;
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.rotateSpeed = 0.2;
+				controls.update();
+
+				//xcontrols = controls;
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				//render();
+			}
+
+			function render() {
+				requestAnimationFrame(render);
+				controls.update();
+				renderer.render( scene, camera );
+			}
+
+			window.addEventListener("message", (event) => {
+				select.selectedIndex = event.data;
+				select.dispatchEvent(new Event('change'));
+			}, false);
+
+			select.addEventListener('change', (event) => {
+				if (inIframe()) {
+					parent.postMessage(select.selectedIndex + "", "*");
+				}
+				var option = select.options[select.selectedIndex];
+				loadModel(option.text);
+			});
+
+			function loadModel(url) {
+				const roughnessMipmapper = new RoughnessMipmapper(renderer);
+				if (model)
+					scene.remove(model);
+				loader.load(url, function (object) {
+					object.traverse(function (child) {
+						if (child.isMesh) {
+							roughnessMipmapper.generateMipmaps( child.material );
+							child.castShadow = true;
+							child.receiveShadow = true;
+						}
+					} );
+					model = object;
+					scene.add(object);
+					roughnessMipmapper.dispose();
+					//render();
+				});
+			}
+
+			document.addEventListener('contextmenu', event => event.preventDefault());
+
+			function inIframe () {
+				try {
+					return window.self !== window.top;
+				} catch (e) {
+					return true;
+				}
+			}
+
+		</script>
+
+	</body>
+</html>

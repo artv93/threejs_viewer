@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" class="noselect">
+	<head>
+		<title>three.js webgl - FBX loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div class="overlay">
+            <label for="select-model">Load model:</label>
+            <select name="select-model" id="select-model" onchange="onSelectModel(this)">
+                <option value="0">./20201025-offlinescanner/output.fbx</option>
+                <option value="1">./20201025-mobilescanner/body.fbx</option>
+            </select>
+        </div>
+
+		<script src="./three.min.js"></script>
+		<script src="./inflate.min.js"></script>
+		<script src="./FBXLoader.js"></script>
+		<script src="./OrbitControls.js"></script>
+		<script src="./EffectComposer.js"></script>
+		<script src="./ShaderPass.js"></script>
+		<script src="./RenderPass.js"></script>
+
+		<script src="./GammaCorrectionShader.js"></script>
+		<script src="./LuminosityHighPassShader.js"></script>
+		<script src="./DepthLimitedBlurShader.js"></script>
+		<script src="./UnpackDepthRGBAShader.js"></script>
+		<script src="./SAOShader.js"></script>
+		<script src="./CopyShader.js"></script>
+
+		<script src="./UnrealBloomPass.js"></script>
+		<script src="./SAOPass.js"></script>
+		<script src="./SimplexNoise.js"></script>
+		<script src="./WebGL.js"></script>
+		<script src="./stats.min.js"></script>
+
+		<script>
+			if ( WEBGL.isWebGLAvailable() === false ) {
+				document.body.appendChild( WEBGL.getWebGLErrorMessage() );
+			}
+
+			var container, stats, controls;
+			var camera, scene, renderer, light;
+
+			var clock = new THREE.Clock();
+
+			var mixer;
+			var loader;
+			var model;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement('div');
+				document.body.appendChild(container);
+
+				camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+				camera.position.set(100, 200, 300);
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color(0xe6e6e6);
+				scene.fog = new THREE.Fog(0xe6e6e6, 500, 1000);
+
+				console.dir(scene.fog);
+
+				light = new THREE.HemisphereLight(0xffffff, 0xa0a0a0);
+				light.position.set(0, 200, 0);
+				scene.add(light);
+
+				light = new THREE.DirectionalLight(0xffffff);
+				light.position.set(0, 200, 100);
+				light.castShadow = true;
+				light.shadow.camera.top = 180;
+				light.shadow.camera.bottom = -100;
+				light.shadow.camera.left = - 120;
+				light.shadow.camera.right = 120;
+				scene.add(light);
+
+				//scene.add(new THREE.CameraHelper(light.shadow.camera));
+
+				// ground
+				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.ShadowMaterial({opacity: 0.5}));
+				mesh.rotation.x = - Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+
+				// model
+				loader = new THREE.FBXLoader();
+				loadModel("./20201025-offlinescanner/output.fbx")
+
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.shadowMap.enabled = true;
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.toneMappingExposure = 1;
+				container.appendChild(renderer.domElement);
+
+				composer = new THREE.EffectComposer( renderer );
+
+				var renderPass = new THREE.RenderPass( scene, camera );
+				composer.addPass( renderPass );
+				console.log("Rander pass");
+				console.dir(renderPass);
+
+				//composer.addPass( new THREE.ShaderPass( THREE.GammaCorrectionShader ) );
+
+				var bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+				bloomPass.threshold = 0.85;
+				bloomPass.strength = 0.2;
+				bloomPass.radius = 0.85;
+				console.log("Bloom pass");
+				console.dir(bloomPass);
+				composer.addPass( bloomPass );
+
+				//saoPass = new THREE.SAOPass( scene, camera, false, true );
+				//console.dir(saoPass);
+				//composer.addPass( saoPass );
+
+				//var ssaoPass = new THREE.SSAOPass( scene, camera, window.innerWidth, window.innerHeight );
+				//ssaoPass.kernelRadius = 16;
+				//composer.addPass( ssaoPass );
+
+				controls = new THREE.OrbitControls(camera, renderer.domElement);
+				controls.target.set(0, 100, 0);
+				controls.enablePan = false;
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.rotateSpeed = 0.2;
+				controls.update();
+
+				window.addEventListener('resize', onWindowResize, false);
+
+				// stats
+				//stats = new Stats();
+				//container.appendChild(stats.dom);
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame(animate);
+				var delta = clock.getDelta();
+				//if (mixer)
+				//	mixer.update( delta );
+				//renderer.render( scene, camera );
+				controls.update();
+				composer.render();
+				//stats.update();
+			}
+
+			window.addEventListener("message", (event) => {
+				var select = document.getElementById("select-model");
+				select.selectedIndex = event.data;
+				select.dispatchEvent(new Event('change'));
+			}, false);
+
+			function onSelectModel(select) {
+				if (inIframe()) {
+					parent.postMessage(select.selectedIndex + "", "*");
+				}
+				var option = select.options[select.selectedIndex];
+				loadModel(option.text);
+			}
+
+			function loadModel(url) {
+				if (model)
+					scene.remove(model);
+				loader.load(url, function (object) {
+					object.traverse(function (child) {
+						if (child.isMesh) {
+							child.castShadow = true;
+							child.receiveShadow = true;
+						}
+					} );
+					scene.add(object);
+					model = object;
+				});
+			}
+
+			document.addEventListener('contextmenu', event => event.preventDefault());
+
+			function inIframe () {
+				try {
+					return window.self !== window.top;
+				} catch (e) {
+					return true;
+				}
+			}
+
+		</script>
+
+	</body>
+</html>
