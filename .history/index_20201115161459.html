@@ -1,0 +1,477 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>WebGL skin material [Lee Perry-Smith]</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<style type="text/css">
+			body {
+				background:#000;
+				color:#aaa;
+				padding:0;
+				margin:0;
+				font-weight: bold;
+				overflow:hidden;
+			}
+
+			a {	color: #eee;	}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #eee;
+				padding: 5px;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				z-index:1000;
+			}
+
+			#oldie {
+				background:rgb(200,100,0) !important;
+				color:#fff;
+			}
+
+		</style>
+	</head>
+
+	<body>
+
+		<script type="module">
+
+			import * as THREE from './three.js-r122/build/three.module.js';
+
+			import { SubsurfaceScatteringShader } from './three.js-r122/examples/jsm/shaders/SubsurfaceScatteringShader.js'; 
+			import { ShaderExtras } from './three.js-r122/examples/jsm/shaders/ShaderExtras.js';
+			import { SkinShader } from './three.js-r122/examples/jsm/shaders/SkinShader.js';
+
+			import { EffectComposer } from './three.js-r122/examples/jsm/postprocessing/EffectComposer.js';
+			import { RenderPass } from './three.js-r122/examples/jsm/postprocessing/RenderPass.js';
+			import { ShaderPass } from './three.js-r122/examples/jsm/postprocessing/ShaderPass.js';
+			import { BloomPass } from './three.js-r122/examples/jsm/postprocessing/BloomPass.js';
+			import { TexturePass } from './three.js-r122/examples/jsm/postprocessing/TexturePass.js';
+			import { MaskPass } from './three.js-r122/examples/jsm/postprocessing/MaskPass.js';
+
+			import { OBJLoader2 } from './three.js-r122/examples/jsm/loaders/OBJLoader2.js';
+
+			console.log (SubsurfaceScatteringShader.vertexShader);
+			console.log (SkinShader.skin.vertexShader);
+
+			var setHSV = function(color, b, c, e) {
+				var f, h, m;
+				if (e == 0)
+					color.r = color.g = color.b = 0;
+				else
+					switch (f = Math.floor(b * 6),
+					h = b * 6 - f,
+					b = e * (1 - c),
+					m = e * (1 - c * h),
+					c = e * (1 - c * (1 - h)),
+					f) {
+					case 1:
+						color.r = m;
+						color.g = e;
+						color.b = b;
+						break;
+					case 2:
+						color.r = b;
+						color.g = e;
+						color.b = c;
+						break;
+					case 3:
+						color.r = b;
+						color.g = m;
+						color.b = e;
+						break;
+					case 4:
+						color.r = c;
+						color.g = b;
+						color.b = e;
+						break;
+					case 5:
+						color.r = e;
+						color.g = b;
+						color.b = m;
+						break;
+					case 6:
+					case 0:
+						color.r = e,
+						color.g = c,
+						color.b = b
+					}
+				return color;
+			}
+
+			var ColorUtils = {
+				__hsv: {
+					h: 0,
+					s: 0,
+					v: 0
+				},
+				adjustHSV: function(b, c, e, f) {
+					var h = ColorUtils.__hsv;
+					ColorUtils.rgbToHsv(b, h);
+					h.h = ColorUtils.clamp(h.h + c, 0, 1);
+					h.s = ColorUtils.clamp(h.s + e, 0, 1);
+					h.v = ColorUtils.clamp(h.v + f, 0, 1);
+					setHSV(b, h.h, h.s, h.v);
+				},
+				rgbToHsv: function(b, c) {
+					var e = b.r
+					, f = b.g
+					, h = b.b
+					, m = Math.max(Math.max(e, f), h)
+					, k = Math.min(Math.min(e, f), h);
+					if (k == m)
+						k = e = 0;
+					else {
+						var n = m - k
+						, k = n / m
+						, e = e == m ? (f - h) / n : f == m ? 2 + (h - e) / n : 4 + (e - f) / n;
+						e /= 6;
+						e < 0 && (e += 1);
+						e > 1 && (e -= 1)
+					}
+					c === void 0 && (c = {
+						h: 0,
+						s: 0,
+						v: 0
+					});
+					c.h = e;
+					c.s = k;
+					c.v = m;
+					return c
+				},
+				clamp: function(b, c, e) {
+					return b < c ? c : b > e ? e : b
+				}
+			};
+
+			//if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var statsEnabled = false;
+
+			var container, stats, loader;
+
+			var camera, scene, renderer;
+
+			var mesh;
+
+			var composer, composerUV1, composerUV2, composerUV3, composerBeckmann, composerScene, composerFinal;
+
+			var directionalLight, pointLight, ambientLight;
+
+			var mouseX = 0, mouseY = 0;
+			var targetX = 0, targetY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 900;
+
+				scene = new THREE.Scene();
+
+				// LIGHTS
+
+				/*ambientLight = new THREE.AmbientLight( 0x222222 );
+				scene.add( ambientLight );
+
+
+				directionalLight = new THREE.DirectionalLight( 0xffeedd, 1 );
+				directionalLight.position.set( 1, -1, 1 );
+				directionalLight.position.normalize();
+				scene.add( directionalLight );*/
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 180;
+				dirLight.shadow.camera.bottom = - 100;
+				dirLight.shadow.camera.left = - 120;
+				dirLight.shadow.camera.right = 120;
+				dirLight.shadow.mapSize.x = 1024;
+				dirLight.shadow.mapSize.y = 1024;
+				scene.add( dirLight );
+
+				scene.add( new THREE.AmbientLight( 0x404040 ) );
+				
+				const pointLight = new THREE.PointLight( 0xffffff, 1 );
+				camera.add(pointLight);
+
+				console.dir(THREE.UniformsLib[ "lights" ])
+
+				// MATERIALS
+
+				var ambient = 0x111111, diffuse = 0xbbbbbb, specular = 0x070707, shininess = 50;
+
+				specular = 0x555555;
+
+				var shader = SkinShader[ "skin" ];
+
+				var uniformsUV = THREE.UniformsUtils.clone( shader.uniforms );
+
+				var texLoader = new THREE.TextureLoader();
+
+				uniformsUV[ "tNormal" ].value = texLoader.load( "./2020-test/obj/Infinite-Level_02_Tangent_SmoothUV.jpg" );
+				uniformsUV[ "uNormalScale" ].value = -0.75;
+
+				uniformsUV[ "tDiffuse" ].value = texLoader.load( "./2020-test/obj/Map-COL.jpg" );
+
+				uniformsUV[ "passID" ].value = 0;
+
+				uniformsUV[ "uDiffuseColor" ].value.setHex( diffuse );
+				uniformsUV[ "uSpecularColor" ].value.setHex( specular );
+				uniformsUV[ "uAmbientColor" ].value.setHex( ambient );
+
+				uniformsUV[ "uRoughness" ].value = 0.185;
+				uniformsUV[ "uSpecularBrightness" ].value = 0.8;
+
+				var uniforms = THREE.UniformsUtils.clone( uniformsUV );
+				uniforms[ "tDiffuse" ].value = uniformsUV[ "tDiffuse" ].value;
+				uniforms[ "tNormal" ].value = uniformsUV[ "tNormal" ].value;
+				uniforms[ "passID" ].value = 1;
+
+				var parameters = { fragmentShader: shader.fragmentShader, vertexShader: shader.vertexShader, uniforms: uniforms, lights: true };
+				var parametersUV = { fragmentShader: shader.fragmentShader, vertexShader: shader.vertexShaderUV, uniforms: uniformsUV, lights: true };
+
+				var material = new THREE.ShaderMaterial( parameters );
+				var materialUV = new THREE.ShaderMaterial( parametersUV );
+
+				// LOADER
+
+				loader = new OBJLoader2( );
+				//document.body.appendChild( loader.statusDomElement );
+
+				loader.load("./2020-test/obj/head.obj",  function( geometry ) { createScene( geometry, 1000, material ) } );
+
+				// RENDERER
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.toneMapping = 0; // THREE.ReinhardToneMapping; CineonToneMapping ACESFilmicToneMapping
+				renderer.toneMappingExposure = 3;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.shadowMap.enabled = true;
+				renderer.setClearColor( 0x050505, 1 );
+				//renderer.autoClear = false;
+				container.appendChild( renderer.domElement );
+
+				// STATS
+
+				if ( statsEnabled ) {
+
+					stats = new Stats();
+					stats.domElement.style.position = 'absolute';
+					stats.domElement.style.top = '0px';
+					stats.domElement.style.zIndex = 100;
+					container.appendChild( stats.domElement );
+
+				}
+
+				// EVENTS
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'touchmove', onTouchMove, { passive: false } );
+
+
+				// POSTPROCESSING
+
+				var renderModelUV = new RenderPass( scene, camera, materialUV, new THREE.Color( 0xca9c8d ) );
+				var renderModel = new RenderPass( scene, camera );
+
+				ColorUtils.adjustHSV( renderModelUV.clearColor, 0, -0.5, -0.45 );
+
+				var effectScreen = new ShaderPass( ShaderExtras[ "screen" ] );
+
+				var effectBloom1 = new BloomPass( 1, 15, 2, 512 );
+				var effectBloom2 = new BloomPass( 1, 25, 4, 512 );
+				var effectBloom3 = new BloomPass( 1, 25, 8, 512 );
+
+				effectBloom1.clear = true;
+				effectBloom2.clear = true;
+				effectBloom3.clear = true;
+
+				//effectScreen.renderToScreen = true;
+
+				//
+
+				var pars = { minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBufer: false };
+				var rtwidth = 512;
+				var rtheight = 512;
+
+				//
+
+				composerScene = new EffectComposer( renderer, new THREE.WebGLRenderTarget( rtwidth, rtheight, pars ) );
+				composerScene.addPass( renderModelUV );
+				composerScene.addPass( effectScreen );
+
+				var renderScene = new TexturePass( composerScene.renderTarget2 );
+
+				//
+
+				composerUV1 = new EffectComposer( renderer, new THREE.WebGLRenderTarget( rtwidth, rtheight, pars ) );
+
+				composerUV1.addPass( renderScene );
+				composerUV1.addPass( effectBloom1 );
+
+				composerUV2 = new EffectComposer( renderer, new THREE.WebGLRenderTarget( rtwidth, rtheight, pars ) );
+
+				composerUV2.addPass( renderScene );
+				composerUV2.addPass( effectBloom2 );
+
+				composerUV3 = new EffectComposer( renderer, new THREE.WebGLRenderTarget( rtwidth, rtheight, pars ) );
+
+				composerUV3.addPass( renderScene );
+				composerUV3.addPass( effectBloom3 );
+
+				//
+
+				var effectBeckmann = new ShaderPass( SkinShader[ "beckmann" ] );
+
+				composerBeckmann = new EffectComposer( renderer, new THREE.WebGLRenderTarget( rtwidth, rtheight, pars ) );
+
+				composerBeckmann.addPass( effectBeckmann );
+
+				//
+
+				var effectBloom = new BloomPass( 0.25 );
+
+				var effectBleach = new ShaderPass( ShaderExtras[ "bleachbypass" ] );
+				effectBleach.uniforms.opacity.value = 0.25;
+
+				effectBleach.renderToScreen = true;
+
+				composerFinal = new EffectComposer( renderer );
+
+				composerFinal.addPass( renderModel );
+				composerFinal.addPass( effectBloom );
+				composerFinal.addPass( effectBleach );
+
+				//
+
+				uniforms[ "tBlur1" ].value = composerScene.renderTarget1;
+				uniforms[ "tBlur2" ].value = composerUV1.renderTarget2;
+				uniforms[ "tBlur3" ].value = composerUV2.renderTarget2;
+				uniforms[ "tBlur4" ].value = composerUV3.renderTarget2;
+
+				uniforms[ "tBeckmann" ].value = composerBeckmann.renderTarget1;
+			}
+
+			// --------------------------------------------------------------------------
+
+			function createScene( geometry, scale, material ) {
+
+				//geometry.computeTangents();
+
+				geometry.traverse(function (child) {
+					if (child.isMesh) {
+						child.material = material;
+						child.castShadow = true;
+						child.receiveShadow = true;
+					}
+				} );
+
+				mesh = geometry;// new THREE.Mesh( geometry, material );
+				mesh.position.y = - 50;
+				mesh.scale.set( scale, scale, scale );
+				mesh.doubleSided = true;
+
+				scene.add( mesh );
+
+				//loader.statusDomElement.style.display = "none";
+
+			}
+
+			// --------------------------------------------------------------------------
+
+			function onWindowResize ( event ) {
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+			}
+
+			// --------------------------------------------------------------------------
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY );
+
+			}
+
+			function onTouchMove ( event ) {
+
+				event.preventDefault();
+
+				var touches = event.touches;
+				var touch = touches[ 0 ];
+
+				mouseX = ( touch.clientX - windowHalfX );
+				mouseY = ( touch.clientY - windowHalfY );
+
+			}
+
+			// --------------------------------------------------------------------------
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				if ( statsEnabled ) stats.update();
+
+			}
+
+			function render() {
+
+				targetX = mouseX * .001;
+				targetY = mouseY * .001;
+
+				if ( mesh ) {
+
+					mesh.rotation.y += 0.05 * ( targetX - mesh.rotation.y );
+					mesh.rotation.x += 0.05 * ( targetY - mesh.rotation.x );
+
+				}
+
+				//renderer.clear();
+
+				//composerBeckmann.render();
+
+
+				//composerScene.render();
+
+				//composerUV1.render();
+				//composerUV2.render();
+				//composerUV3.render();
+
+				//composerFinal.render( 0.1 );
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>

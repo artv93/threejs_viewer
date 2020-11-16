@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>WebGL Demo (threejs r122)</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div class="overlay">
+            <label for="select-model">Load model:</label>
+            <select name="select-model" id="select-model">
+                <option value="0">./20201025-offlinescanner/output.fbx</option>
+                <option value="1">./20201025-mobilescanner/body.fbx</option>
+            </select>
+		</div>
+		<!--script src="./tensorflow.js/tf.min.js"></script-->
+		<script type="module">
+
+			import * as THREE from './three.js-r122/build/three.module.js';
+
+			import { OrbitControls } from './three.js-r122/examples/jsm/controls/OrbitControls.js';
+			import { GLTFLoader } from './three.js-r122/examples/jsm/loaders/GLTFLoader.js';
+			import { FBXLoader } from './/three.js-r122/examples/jsm/loaders/FBXLoader.js';
+			import { RGBELoader } from './three.js-r122/examples/jsm/loaders/RGBELoader.js';
+			import { RoughnessMipmapper } from './three.js-r122/examples/jsm/utils/RoughnessMipmapper.js';
+			import { SubsurfaceScatteringShader } from './three.js-r122/examples/jsm/shaders/SubsurfaceScatteringShader.js';
+			import { EffectComposer } from './three.js-r122/examples/jsm/postprocessing/EffectComposer.js';
+			import { RenderPass } from './three.js-r122/examples/jsm/postprocessing/RenderPass.js';
+			import { ShaderPass } from './three.js-r122/examples/jsm/postprocessing/ShaderPass.js';
+			import { UnrealBloomPass } from './three.js-r122/examples/jsm/postprocessing/UnrealBloomPass.js';
+			import { SAOPass } from './three.js-r122/examples/jsm/postprocessing/SAOPass.js';
+			import { SSAOPass } from './three.js-r122/examples/jsm/postprocessing/SSAOPass.js';
+			import { AfterimagePass } from './three.js-r122/examples/jsm/postprocessing/AfterimagePass.js';
+			import { FilmPass } from './three.js-r122/examples/jsm/examples/jsm/postprocessing/FilmPass.js';
+
+			var camera, scene, renderer, composer;
+			var loader, model, controls;
+			var customPass;
+			var counter = 0;
+
+			var select = document.getElementById("select-model");
+
+			//console.dir(tf);
+			//load_graph("./tensorflow.js/models/model_mask3_white_light.pb");
+
+			init();
+			render();
+
+			function init() {
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.toneMapping = 0; // THREE.ReinhardToneMapping; CineonToneMapping ACESFilmicToneMapping
+				renderer.toneMappingExposure = 3;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				const pmremGenerator = new THREE.PMREMGenerator( renderer );
+				pmremGenerator.compileEquirectangularShader();
+				
+				camera = new THREE.PerspectiveCamera( 24, window.innerWidth / window.innerHeight, 1, 2000 );
+				console.dir(camera);
+				camera.position.set(0, 135, 500);
+				//camera.position.set(-1.8, 0.6, 2.7);
+
+				controls = new OrbitControls( camera, renderer.domElement );
+				console.dir(controls);
+				controls.target.set(0, 100, 0);
+				controls.minDistance = 50;
+				controls.maxDistance = 500;
+				controls.zoomSpeed = 4;
+				//controls.enablePan = false;
+				controls.screenSpacePanning = true;
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.rotateSpeed = 0.4;
+				controls.update();
+
+				scene = new THREE.Scene();
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 180;
+				dirLight.shadow.camera.bottom = - 100;
+				dirLight.shadow.camera.left = - 120;
+				dirLight.shadow.camera.right = 120;
+				dirLight.shadow.mapSize.x = 1024;
+				dirLight.shadow.mapSize.y = 1024;
+				scene.add( dirLight );
+
+				scene.add( new THREE.AmbientLight( 0x404040 ) );
+				
+				const pointLight = new THREE.PointLight( 0xffffff, 1 );
+				camera.add(pointLight);
+
+				// new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) 	
+				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.ShadowMaterial({opacity: 0.5}));
+				mesh.rotation.x = - Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+
+				const renderScene = new RenderPass(scene, camera);
+
+				const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+				bloomPass.strength = 0.6;
+				bloomPass.threshold = 0.06;
+				bloomPass.radius = 1;
+				bloomPass.nMips = 2;
+				console.dir(bloomPass);
+
+				const saoPass = new SAOPass( scene, camera, false, true );
+				saoPass.params.saoBias = 0;
+				saoPass.params.saoIntensity = 0.01;
+				saoPass.params.saoKernelRadius = 0.3;
+				saoPass.params.saoMinResolution = 0;
+				saoPass.params.saoScale = 15;
+				console.dir(saoPass.params);
+
+				const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+				ssaoPass.kernelRadius = 16;
+				console.dir(saoPass.params);
+
+				const afterimagePass = new AfterimagePass();
+				afterimagePass.uniforms.damp = 0.5;
+				console.dir(afterimagePass.uniforms);
+
+				var vertShader = document.getElementById('vertexShader').textContent;
+				var fragShader = document.getElementById('fragmentShader').textContent;
+				var myEffect = {
+					uniforms: {
+						"tDiffuse": { value: null },
+						"amount": { value: counter }
+					},
+					vertexShader: vertShader,
+					fragmentShader: fragShader
+				}
+				
+				customPass = new ShaderPass(myEffect);
+				customPass.renderToScreen = true;
+
+				const filmPass = new FilmPass(
+					0.35,   // noise intensity
+					0.025,  // scanline intensity
+					648,    // scanline count
+					false,  // grayscale
+				);
+				filmPass.renderToScreen = true;
+				
+				composer = new EffectComposer(renderer);
+				composer.addPass(renderScene);
+				composer.addPass(ssaoPass);
+				composer.addPass(saoPass);
+				composer.addPass(bloomPass);
+				composer.addPass(afterimagePass);
+				composer.addPass(filmPass);
+				//composer.addPass(customPass);
+
+				new RGBELoader()
+					.setDataType(THREE.UnsignedByteType)
+					.setPath('./three.js-r122/examples/textures/equirectangular/')
+					.load('royal_esplanade_1k.hdr', function (texture) {
+
+						const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+
+						scene.background = new THREE.Color(0x000000);
+						//scene.fog = new THREE.Fog(0xe0e0e0, 1000, 2000);
+						scene.environment = envMap;
+
+						texture.dispose();
+						pmremGenerator.dispose();
+
+						//render();
+
+						// use of RoughnessMipmapper is optional
+						/*const roughnessMipmapper = new RoughnessMipmapper( renderer );
+
+						const loader = new GLTFLoader().setPath( './three.js-r122/examples/models/gltf/DamagedHelmet/glTF/' );
+						loader.load( 'DamagedHelmet.gltf', function ( gltf ) {
+
+							gltf.scene.traverse( function ( child ) {
+
+								if ( child.isMesh ) {
+
+									// TOFIX RoughnessMipmapper seems to be broken with WebGL 2.0
+									// roughnessMipmapper.generateMipmaps( child.material );
+
+								}
+
+							} );
+
+							scene.add( gltf.scene );
+
+							roughnessMipmapper.dispose();
+
+							//render();
+
+						} );*/
+
+						loader = new FBXLoader();
+						loadModel("./20201025-mobilescanner/body.fbx")
+
+					} );
+
+
+				//xcontrols = controls;
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				//render();
+			}
+
+			function render() {
+				requestAnimationFrame(render);
+				controls.update();
+				//renderer.render( scene, camera );
+				counter += 0.01;
+  				customPass.uniforms["amount"].value = counter;
+
+				composer.render();
+			}
+
+			function load_graph(graph_filename)
+			{
+				var f = tf.gfile.GFile(graph_filename, 'rb');
+				var graph_def = tf.GraphDef();
+				graph_def.ParseFromString(f.read());
+				return graph_def;
+			}
+
+			window.addEventListener("message", (event) => {
+				select.selectedIndex = event.data;
+				select.dispatchEvent(new Event('change'));
+			}, false);
+
+			select.addEventListener('change', (event) => {
+				if (inIframe()) {
+					parent.postMessage(select.selectedIndex + "", "*");
+				}
+				var option = select.options[select.selectedIndex];
+				loadModel(option.text);
+			});
+
+			function loadModel(url) {
+				const roughnessMipmapper = new RoughnessMipmapper(renderer);
+				if (model)
+					scene.remove(model);
+				loader.load(url, function (object) {
+					object.traverse(function (child) {
+						if (child.isMesh) {
+							
+							if (child.material.name == "M_hair"){
+
+								child.material.transparent = true;
+								child.material.depthWrite = false;
+							}
+							else if (child.material.name == "M_body") {
+								//child.material = loadSkinTexture(child.material.map, child.material.map);
+							}
+							else if (child.material.name == "M_head") {
+								//console.dir(child.material);
+								//child.material = loadSkinTexture(child.material.map, child.material.map);
+							}
+							roughnessMipmapper.generateMipmaps( child.material );
+							child.castShadow = true;
+							child.receiveShadow = true;
+						}
+					} );
+					model = object;
+					scene.add(object);
+					roughnessMipmapper.dispose();
+					//render();
+				});
+			}
+
+			function loadSkinTexture(imgTexture, thicknessTexture) {
+				//const loader = new THREE.TextureLoader();
+				//const thicknessTexture = loader.load(thicknessTexturePath);
+				imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
+
+				const shader = SubsurfaceScatteringShader;
+				const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+
+				uniforms[ 'map' ].value = imgTexture;
+
+				uniforms[ 'diffuse' ].value = new THREE.Vector3( 1.0, 0.2, 0.2 );
+				uniforms[ 'shininess' ].value = 500;
+
+				uniforms[ 'thicknessMap' ].value = thicknessTexture;
+				uniforms[ 'thicknessColor' ].value = new THREE.Vector3( 0.5, 0.3, 0.0 );
+				uniforms[ 'thicknessDistortion' ].value = 1.0;
+				uniforms[ 'thicknessAmbient' ].value = 0.2;
+				uniforms[ 'thicknessAttenuation' ].value = 0.8;
+				uniforms[ 'thicknessPower' ].value = 4.5;
+				uniforms[ 'thicknessScale' ].value = 0.7;
+
+				console.dir(uniforms);
+
+				const material = new THREE.ShaderMaterial( {
+					uniforms: uniforms,
+					vertexShader: shader.vertexShader,
+					fragmentShader: shader.fragmentShader,
+					lights: true,
+					skinning: true,
+				} );
+				material.extensions.derivatives = true;
+				material.map = imgTexture;
+				return material;
+			}
+
+			document.addEventListener('contextmenu', event => event.preventDefault());
+
+			function inIframe () {
+				try {
+					return window.self !== window.top;
+				} catch (e) {
+					return true;
+				}
+			}
+
+		</script>
+
+		<script id="vertexShader" type="x-shader/x-vertex">
+			varying vec2 vUv;
+			void main() {
+				vUv = uv;
+				gl_Position = projectionMatrix 
+					* modelViewMatrix 
+					* vec4( position, 1.0 );
+			}
+		</script>
+		
+		<script id="fragmentShader" type="x-shader/x-fragment">
+			uniform float amount;
+			uniform sampler2D tDiffuse;
+			varying vec2 vUv;
+		
+			float random( vec2 p )
+			{
+				vec2 K1 = vec2(
+					23.14069263277926, // e^pi (Gelfond's constant)
+					2.665144142690225 // 2^sqrt(2) (Gelfondâ€“Schneider constant)
+			);
+				return fract( cos( dot(p,K1) ) * 12345.6789 );
+			}
+		
+			void main() {
+				vec4 color = texture2D( tDiffuse, vUv );
+				vec2 uvRandom = vUv;
+				uvRandom.y *= random(vec2(uvRandom.y,amount));
+				//color.rgb = mix(color.rgb, color.rgb + random(uvRandom), 0.05);
+				gl_FragColor = vec4( color  );
+			}
+		</script>
+
+	</body>
+</html>
