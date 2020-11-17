@@ -13,12 +13,11 @@
             <select name="select-model" id="select-model">
                 <option value="0">./20201025-offlinescanner/output.fbx</option>
 				<option value="1">./20201025-mobilescanner/body.fbx</option>
-				<!--option value="2">./2020-test/head.fbx</option-->
+				<option value="2">./2020-test/head.fbx</option>
             </select>
 		</div>
 		<!--script src="./tensorflow.js/tf.min.js"></script-->
 		<script src="./Filament/filament.js"></script>
-		<script src="./filament-renderer.js"></script>
 		<script type="module">
 
 			import * as THREE from './three.js-r122/build/three.module.js';
@@ -59,10 +58,11 @@
 			const canvas = document.getElementsByTagName('canvas')[0];
 			if (!canvas.getContext('webgl2')) {
 				console.log('your browser/OS/drivers do not support WebGL2');
+				document.removeChild(canvas);
 
 			} else {
 				console.log('webgl2 works!');
-				//window.app = new App();
+
 			}
 
 			function init() {
@@ -80,9 +80,11 @@
 				pmremGenerator.compileEquirectangularShader();
 				
 				camera = new THREE.PerspectiveCamera( 24, window.innerWidth / window.innerHeight, 1, 2000 );
+				console.dir(camera);
 				camera.position.set(0, 135, 500);
 
 				controls = new OrbitControls( camera, renderer.domElement );
+				console.dir(controls);
 				controls.target.set(0, 100, 0);
 				controls.minDistance = 50;
 				controls.maxDistance = 500;
@@ -127,6 +129,7 @@
 				bloomPass.threshold = 0.06;
 				bloomPass.radius = 1;
 				bloomPass.nMips = 2;
+				console.dir(bloomPass);
 
 				const saoPass = new SAOPass( scene, camera, false, true );
 				saoPass.params.saoBias = 0;

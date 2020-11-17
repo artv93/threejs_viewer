@@ -13,12 +13,10 @@
             <select name="select-model" id="select-model">
                 <option value="0">./20201025-offlinescanner/output.fbx</option>
 				<option value="1">./20201025-mobilescanner/body.fbx</option>
-				<!--option value="2">./2020-test/head.fbx</option-->
+				<option value="2">./2020-test/head.fbx</option>
             </select>
 		</div>
 		<!--script src="./tensorflow.js/tf.min.js"></script-->
-		<script src="./Filament/filament.js"></script>
-		<script src="./filament-renderer.js"></script>
 		<script type="module">
 
 			import * as THREE from './three.js-r122/build/three.module.js';
@@ -50,23 +48,17 @@
 			//console.dir(tf);
 			//load_graph("./tensorflow.js/models/model_mask3_white_light.pb");
 
-			const container = document.createElement( 'div' );
-			document.body.appendChild( container );
+			console.log(THREE.meshphong_vert);
+			console.log(THREE.meshphong_frag);
 
 			init();
 			render();
 
-			const canvas = document.getElementsByTagName('canvas')[0];
-			if (!canvas.getContext('webgl2')) {
-				console.log('your browser/OS/drivers do not support WebGL2');
-
-			} else {
-				console.log('webgl2 works!');
-				//window.app = new App();
-			}
-
 			function init() {
-	
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -80,13 +72,17 @@
 				pmremGenerator.compileEquirectangularShader();
 				
 				camera = new THREE.PerspectiveCamera( 24, window.innerWidth / window.innerHeight, 1, 2000 );
+				console.dir(camera);
 				camera.position.set(0, 135, 500);
+				//camera.position.set(-1.8, 0.6, 2.7);
 
 				controls = new OrbitControls( camera, renderer.domElement );
+				console.dir(controls);
 				controls.target.set(0, 100, 0);
 				controls.minDistance = 50;
 				controls.maxDistance = 500;
 				controls.zoomSpeed = 4;
+				//controls.enablePan = false;
 				controls.screenSpacePanning = true;
 				controls.enableDamping = true;
 				controls.dampingFactor = 0.25;
@@ -115,6 +111,7 @@
 				const pointLight = new THREE.PointLight( 0xffffff, 1 );
 				camera.add(pointLight);
 
+				// new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) 	
 				var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.ShadowMaterial({opacity: 0.5}));
 				mesh.rotation.x = - Math.PI / 2;
 				mesh.receiveShadow = true;
@@ -127,6 +124,7 @@
 				bloomPass.threshold = 0.06;
 				bloomPass.radius = 1;
 				bloomPass.nMips = 2;
+				console.dir(bloomPass);
 
 				const saoPass = new SAOPass( scene, camera, false, true );
 				saoPass.params.saoBias = 0;
@@ -134,12 +132,15 @@
 				saoPass.params.saoKernelRadius = 0.3;
 				saoPass.params.saoMinResolution = 0;
 				saoPass.params.saoScale = 15;
+				console.dir(saoPass.params);
 
 				const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
 				ssaoPass.kernelRadius = 16;
+				console.dir(saoPass.params);
 
 				const afterimagePass = new AfterimagePass();
 				afterimagePass.uniforms.damp = 0.5;
+				console.dir(afterimagePass.uniforms);
 
 				var vertShader = document.getElementById('vertexShader').textContent;
 				var fragShader = document.getElementById('fragmentShader').textContent;
@@ -166,10 +167,11 @@
 				composer = new EffectComposer(renderer);
 				composer.addPass(renderScene);
 				composer.addPass(ssaoPass);
-				composer.addPass(saoPass);
+				//composer.addPass(saoPass);
 				composer.addPass(bloomPass);
 				composer.addPass(filmPass);
-				composer.addPass(afterimagePass);
+				//composer.addPass(afterimagePass);
+
 				//composer.addPass(customPass);
 
 				new RGBELoader()
@@ -180,15 +182,46 @@
 						const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
 
 						scene.background = new THREE.Color(0x000000);
+						//scene.fog = new THREE.Fog(0xe0e0e0, 1000, 2000);
 						scene.environment = envMap;
 
 						texture.dispose();
 						pmremGenerator.dispose();
 
+						//render();
+
+						// use of RoughnessMipmapper is optional
+						/*const roughnessMipmapper = new RoughnessMipmapper( renderer );
+
+						const loader = new GLTFLoader().setPath( './three.js-r122/examples/models/gltf/DamagedHelmet/glTF/' );
+						loader.load( 'DamagedHelmet.gltf', function ( gltf ) {
+
+							gltf.scene.traverse( function ( child ) {
+
+								if ( child.isMesh ) {
+
+									// TOFIX RoughnessMipmapper seems to be broken with WebGL 2.0
+									// roughnessMipmapper.generateMipmaps( child.material );
+
+								}
+
+							} );
+
+							scene.add( gltf.scene );
+
+							roughnessMipmapper.dispose();
+
+							//render();
+
+						} );*/
+
 						loader = new FBXLoader();
 						loadModel("./20201025-mobilescanner/body.fbx")
 
 					} );
+
+
+				//xcontrols = controls;
 
 				window.addEventListener( 'resize', onWindowResize, false );
 			}
@@ -197,11 +230,13 @@
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				//render();
 			}
 
 			function render() {
 				requestAnimationFrame(render);
 				controls.update();
+				//renderer.render( scene, camera );
 				counter += 0.01;
   				customPass.uniforms["amount"].value = counter;
 
@@ -233,15 +268,13 @@
 			});
 
 			function loadModel(url, skinMaterial) {
+				const roughnessMipmapper = new RoughnessMipmapper(renderer);
 				if (model)
 					scene.remove(model);
 				loader.load(url, function (object) {
 					object.traverse(function (child) {
 						if (child.isMesh) {
-							child.material.map.minFilter = THREE.NearestFilter;
-							child.material.map.magFilter = THREE.LinearFilter;
-							child.material.map.anisotropy = 2;
-							child.material.map.generateMipmaps = false;
+							console.dir(child.material.map);
 							if (child.material.name == "M_hair"){
 								child.material.transparent = true;
 								child.material.depthWrite = false;
@@ -268,34 +301,39 @@
 								child.material[0].thicknessMap = thicknessMap;
 								//child.material[0] = loadSkinTexture(mainTexture, thicknessMap, normalMap, aoMap);
 							}
+							roughnessMipmapper.generateMipmaps(child.material);
 							child.castShadow = true;
 							child.receiveShadow = true;
 						}
 					} );
 					model = object;
 					scene.add(object);
+					roughnessMipmapper.dispose();
+					//render();
 				});
 			}
 
 			function loadSkinTexture(imgTexture, thicknessTexture, normalMap, aoMap) {
-
+				//const loader = new THREE.TextureLoader();
+				//const thicknessTexture = loader.load(thicknessTexturePath);
 				imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
 
 				const shader = SubsurfaceScatteringShader2;
 				const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
 
-				uniforms['map'].value = imgTexture;
+				uniforms[ 'map' ].value = imgTexture;
 				uniforms['normalMap'].value = normalMap;
-				uniforms['normalScale'].value = new THREE.Vector2(0.1, 0.1);
-				uniforms['diffuse'].value = new THREE.Vector3( 1.0, 1.0, 1.0 );
-				//uniforms[ 'shininess'].value = 500;
-				uniforms['thicknessMap'].value = thicknessTexture;
-				//uniforms['thicknessColor'].value = new THREE.Vector3( 0.5, 0.3, 0.0 );
-				//uniforms['thicknessDistortion'].value = 1.0;
-				uniforms['thicknessAmbient'].value = 0.2;
-				//uniforms['thicknessAttenuation'].value = 0.8;
-				//uniforms['thicknessPower'].value = 4.5;
-				//uniforms['thicknessScale'].value = 0.7;
+				uniforms[ 'diffuse' ].value = new THREE.Vector3( 1.0, 1.0, 1.0 );
+				//uniforms[ 'shininess' ].value = 500;
+				uniforms[ 'thicknessMap' ].value = thicknessTexture;
+				//uniforms[ 'thicknessColor' ].value = new THREE.Vector3( 0.5, 0.3, 0.0 );
+				//uniforms[ 'thicknessDistortion' ].value = 1.0;
+				uniforms[ 'thicknessAmbient' ].value = 0.2;
+				//uniforms[ 'thicknessAttenuation' ].value = 0.8;
+				//uniforms[ 'thicknessPower' ].value = 4.5;
+				//uniforms[ 'thicknessScale' ].value = 0.7;
+
+				console.dir(uniforms);
 
 				const material = new THREE.ShaderMaterial( {
 					uniforms: uniforms,

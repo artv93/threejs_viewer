@@ -150,8 +150,8 @@ void main() {
 	#include <transmissionmap_fragment>
 	#include <lights_physical_fragment>
 	#include <lights_fragment_begin>
-	#include <lights_fragment_maps>
-  #include <lights_fragment_end>
+	//#include <lights_fragment_maps>
+  //#include <lights_fragment_end>
   
   #ifdef USE_TRANSLUCENCY
     vec3 thicknessColor = vec3(1.0, 0.0, 0.0);

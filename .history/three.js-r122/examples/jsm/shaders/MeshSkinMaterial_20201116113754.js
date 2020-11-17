@@ -150,8 +150,8 @@ void main() {
 	#include <transmissionmap_fragment>
 	#include <lights_physical_fragment>
 	#include <lights_fragment_begin>
-	#include <lights_fragment_maps>
-  #include <lights_fragment_end>
+	//#include <lights_fragment_maps>
+  //#include <lights_fragment_end>
   
   #ifdef USE_TRANSLUCENCY
     vec3 thicknessColor = vec3(1.0, 0.0, 0.0);
@@ -238,11 +238,10 @@ var MeshSkinMaterial = function (parameters) {
       thicknessRepeat: new THREE.Uniform(parameters.thicknessRepeat || new THREE.Vector2(1, 1)), //{ value: parameters.thicknessRepeat || new THREE.Vector2() },
       thicknessPower: new THREE.Uniform(0.1), //{ value: 20 },
       thicknessScale: new THREE.Uniform(0.5), //{ value: 4 },
-      thicknessDistortion: new THREE.Uniform(0.99), //{ value: 0.185 },
+      thicknessDistortion: new THREE.Uniform(0.185), //{ value: 0.185 },
       thicknessAmbient: new THREE.Uniform(0.25), //{ value: 0.5 },
       transmissionMap: new THREE.Uniform(parameters.thicknessMap || new THREE.Texture()), //{value: parameters.thicknessMap || new THREE.Texture()},
       transmission: new THREE.Uniform(0.5), //{value: 0.5}
-      normalScale: new THREE.Uniform(new THREE.Vector2(0.25, 0.25)),
     }
   );
   setFlags(this);

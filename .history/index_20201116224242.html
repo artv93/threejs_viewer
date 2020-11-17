@@ -13,12 +13,11 @@
             <select name="select-model" id="select-model">
                 <option value="0">./20201025-offlinescanner/output.fbx</option>
 				<option value="1">./20201025-mobilescanner/body.fbx</option>
-				<!--option value="2">./2020-test/head.fbx</option-->
+				<option value="2">./2020-test/head.fbx</option>
             </select>
 		</div>
 		<!--script src="./tensorflow.js/tf.min.js"></script-->
 		<script src="./Filament/filament.js"></script>
-		<script src="./filament-renderer.js"></script>
 		<script type="module">
 
 			import * as THREE from './three.js-r122/build/three.module.js';
@@ -50,23 +49,21 @@
 			//console.dir(tf);
 			//load_graph("./tensorflow.js/models/model_mask3_white_light.pb");
 
-			const container = document.createElement( 'div' );
-			document.body.appendChild( container );
-
-			init();
-			render();
-
-			const canvas = document.getElementsByTagName('canvas')[0];
+			const canvas = document.createElement('canvas');
 			if (!canvas.getContext('webgl2')) {
 				console.log('your browser/OS/drivers do not support WebGL2');
-
+				init();
+				render();
 			} else {
 				console.log('webgl2 works!');
-				//window.app = new App();
+				
 			}
 
 			function init() {
-	
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -80,9 +77,11 @@
 				pmremGenerator.compileEquirectangularShader();
 				
 				camera = new THREE.PerspectiveCamera( 24, window.innerWidth / window.innerHeight, 1, 2000 );
+				console.dir(camera);
 				camera.position.set(0, 135, 500);
 
 				controls = new OrbitControls( camera, renderer.domElement );
+				console.dir(controls);
 				controls.target.set(0, 100, 0);
 				controls.minDistance = 50;
 				controls.maxDistance = 500;
@@ -127,6 +126,7 @@
 				bloomPass.threshold = 0.06;
 				bloomPass.radius = 1;
 				bloomPass.nMips = 2;
+				console.dir(bloomPass);
 
 				const saoPass = new SAOPass( scene, camera, false, true );
 				saoPass.params.saoBias = 0;
@@ -134,12 +134,15 @@
 				saoPass.params.saoKernelRadius = 0.3;
 				saoPass.params.saoMinResolution = 0;
 				saoPass.params.saoScale = 15;
+				console.dir(saoPass.params);
 
 				const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
 				ssaoPass.kernelRadius = 16;
+				console.dir(saoPass.params);
 
 				const afterimagePass = new AfterimagePass();
 				afterimagePass.uniforms.damp = 0.5;
+				console.dir(afterimagePass.uniforms);
 
 				var vertShader = document.getElementById('vertexShader').textContent;
 				var fragShader = document.getElementById('fragmentShader').textContent;
@@ -170,6 +173,7 @@
 				composer.addPass(bloomPass);
 				composer.addPass(filmPass);
 				composer.addPass(afterimagePass);
+
 				//composer.addPass(customPass);
 
 				new RGBELoader()
@@ -278,24 +282,27 @@
 			}
 
 			function loadSkinTexture(imgTexture, thicknessTexture, normalMap, aoMap) {
-
+				//const loader = new THREE.TextureLoader();
+				//const thicknessTexture = loader.load(thicknessTexturePath);
 				imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
 
 				const shader = SubsurfaceScatteringShader2;
 				const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
 
-				uniforms['map'].value = imgTexture;
+				uniforms[ 'map' ].value = imgTexture;
 				uniforms['normalMap'].value = normalMap;
 				uniforms['normalScale'].value = new THREE.Vector2(0.1, 0.1);
-				uniforms['diffuse'].value = new THREE.Vector3( 1.0, 1.0, 1.0 );
-				//uniforms[ 'shininess'].value = 500;
-				uniforms['thicknessMap'].value = thicknessTexture;
-				//uniforms['thicknessColor'].value = new THREE.Vector3( 0.5, 0.3, 0.0 );
-				//uniforms['thicknessDistortion'].value = 1.0;
-				uniforms['thicknessAmbient'].value = 0.2;
-				//uniforms['thicknessAttenuation'].value = 0.8;
-				//uniforms['thicknessPower'].value = 4.5;
-				//uniforms['thicknessScale'].value = 0.7;
+				uniforms[ 'diffuse' ].value = new THREE.Vector3( 1.0, 1.0, 1.0 );
+				//uniforms[ 'shininess' ].value = 500;
+				uniforms[ 'thicknessMap' ].value = thicknessTexture;
+				//uniforms[ 'thicknessColor' ].value = new THREE.Vector3( 0.5, 0.3, 0.0 );
+				//uniforms[ 'thicknessDistortion' ].value = 1.0;
+				uniforms[ 'thicknessAmbient' ].value = 0.2;
+				//uniforms[ 'thicknessAttenuation' ].value = 0.8;
+				//uniforms[ 'thicknessPower' ].value = 4.5;
+				//uniforms[ 'thicknessScale' ].value = 0.7;
+
+				console.dir(uniforms);
 
 				const material = new THREE.ShaderMaterial( {
 					uniforms: uniforms,
