@@ -165,16 +165,20 @@
 				);
 				filmPass.renderToScreen = true;
 
-				//const pass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
-				//composer.addPass( pass );
-				
+				const smaaPass = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
+
 				composer = new EffectComposer(renderer);
 				composer.addPass(renderScene);
-				//composer.addPass(ssaoPass);
+
+				composer.addPass(ssaoPass);
 				composer.addPass(saoPass);
 				composer.addPass(bloomPass);
-				//composer.addPass(filmPass);
+
+				composer.addPass(filmPass);
+				composer.addPass(smaaPass);
 				composer.addPass(afterimagePass);
+
+
 				//composer.addPass(customPass);
 
 				new RGBELoader()
@@ -191,7 +195,7 @@
 						pmremGenerator.dispose();
 
 						loader = new FBXLoader();
-						loadModel("./20201025-offlinescanner/output.fbx")
+						loadModel("./20201025-mobilescanner/body.fbx")
 
 					} );
 
